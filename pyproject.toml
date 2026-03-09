@@ -21,7 +21,7 @@ dependencies = [
 
 [project.optional-dependencies]
 kokoro = [
-    "kokoro>=1.0",
+    "kokoro>=0.9",
     "torch>=2.0",
     "torchaudio>=2.0",
 ]
@@ -31,12 +31,12 @@ chatterbox = [
     "torchaudio>=2.0",
 ]
 local = [
-    "kokoro>=1.0",
+    "kokoro>=0.9",
     "chatterbox-tts",
     "torch>=2.0",
     "torchaudio>=2.0",
     "mlx>=0.5",
-    "mlx-stablediffusion",
+    "mflux>=0.9",
 ]
 cloud = [
     "openai>=1.0",

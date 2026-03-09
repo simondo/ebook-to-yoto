@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
+
+# Required for MPS fallback on Apple Silicon (some ops not yet implemented on MPS)
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 from .base import TTSBackend
 

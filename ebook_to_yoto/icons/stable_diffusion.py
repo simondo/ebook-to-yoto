@@ -1,4 +1,4 @@
-"""Local Stable Diffusion icon backend via MLX."""
+"""Local image generation backend using mflux (FLUX.1-schnell via MLX)."""
 
 from __future__ import annotations
 
@@ -20,44 +20,53 @@ class StableDiffusionBackend(IconBackend):
 
     def generate(self, prompt: str, out_path: Path) -> Path:
         try:
-            return self._generate_mlx(prompt, out_path)
+            return self._generate_mflux(prompt, out_path)
         except Exception as e:
             warnings.warn(
-                f"Stable Diffusion generation failed ({e}). "
-                "Will use bundled fallback icon.",
+                f"mflux image generation failed ({e}). Will use bundled fallback icon.",
                 stacklevel=2,
             )
             raise
 
-    def _generate_mlx(self, prompt: str, out_path: Path) -> Path:
+    def _generate_mflux(self, prompt: str, out_path: Path) -> Path:
         try:
-            from mlx_stablediffusion import StableDiffusionPipeline
+            from mflux.models.flux.variants.txt2img.flux import Flux1
+            from mflux.models.common.config.model_config import ModelConfig
         except ImportError:
-            try:
-                # Alternative package name
-                import mlx_stable_diffusion as mlx_sd
-                StableDiffusionPipeline = mlx_sd.StableDiffusionPipeline
-            except ImportError:
-                sys.exit(
-                    "mlx-stablediffusion is not installed.\n"
-                    "Run: pip install mlx-stablediffusion\n"
-                    "(or: pip install -e '.[local]' from the project directory)"
-                )
+            sys.exit(
+                "mflux is not installed.\n"
+                "Run: pip install mflux\n"
+                "(or: pip install -e '.[local]' from the project directory)"
+            )
 
-        print("  Generating icon with Stable Diffusion (first run downloads ~2.5 GB)...")
-        pipe = StableDiffusionPipeline.from_pretrained(
-            "stabilityai/sdxl-turbo",
-            cache_dir=str(Path.home() / ".cache" / "mlx-sd"),
+        import os
+        if not os.environ.get("HF_TOKEN"):
+            print(
+                "  Note: FLUX.1-schnell requires a free HuggingFace account.\n"
+                "  First run: accept terms at https://huggingface.co/black-forest-labs/FLUX.1-schnell\n"
+                "  Then set: export HF_TOKEN=your_token_from_https://huggingface.co/settings/tokens\n"
+                "  (Will use bundled fallback icons until HF_TOKEN is set.)"
+            )
+
+        print("  Generating icon with FLUX.1-schnell (first run downloads ~6 GB)...")
+
+        flux = Flux1(
+            model_config=ModelConfig.schnell(),
+            quantize=8,  # 8-bit — good quality/size tradeoff (~6 GB)
         )
-        images = pipe(
-            prompt,
-            num_inference_steps=1,
+
+        result = flux.generate_image(
+            seed=42,
+            prompt=prompt,
+            num_inference_steps=2,  # schnell works well at 2–4 steps
             height=512,
             width=512,
-            guidance_scale=0.0,  # SDXL-Turbo uses no guidance
+            guidance=0.0,  # schnell is guidance-distilled
         )
-        pil_image = images[0] if isinstance(images, list) else images
 
-        result = pixelate(pil_image)
-        result.save(str(out_path), "PNG")
+        # GeneratedImage has a .image property (PIL Image)
+        pil_image = result.image
+
+        pixelated = pixelate(pil_image)
+        pixelated.save(str(out_path), "PNG")
         return out_path

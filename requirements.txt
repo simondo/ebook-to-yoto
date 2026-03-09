@@ -3,7 +3,7 @@ ebooklib>=0.18
 pypdf>=4.0
 beautifulsoup4>=4.12
 lxml>=5.0
-kokoro>=1.0
+kokoro>=0.9
 chatterbox-tts
 torch>=2.0
 torchaudio>=2.0
@@ -11,5 +11,5 @@ Pillow>=10.0
 mutagen>=1.47
 tqdm>=4.66
 mlx>=0.5
-mlx-stablediffusion
+mflux>=0.9
 soundfile>=0.12
