@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.DS_Store
+tests/fixtures/test_book.epub
+tests/fixtures/test_book.txt
