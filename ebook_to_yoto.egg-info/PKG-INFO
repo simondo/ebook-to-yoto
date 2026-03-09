@@ -1,0 +1,37 @@
+Metadata-Version: 2.4
+Name: ebook-to-yoto
+Version: 0.1.0
+Summary: Convert DRM-free ebooks into Yoto-ready MP3s and pixel art icons
+Requires-Python: >=3.11
+Requires-Dist: click>=8.1
+Requires-Dist: ebooklib>=0.18
+Requires-Dist: pypdf>=4.0
+Requires-Dist: beautifulsoup4>=4.12
+Requires-Dist: lxml>=5.0
+Requires-Dist: Pillow>=10.0
+Requires-Dist: mutagen>=1.47
+Requires-Dist: tqdm>=4.66
+Requires-Dist: tomli>=2.0; python_version < "3.11"
+Provides-Extra: kokoro
+Requires-Dist: kokoro>=1.0; extra == "kokoro"
+Requires-Dist: torch>=2.0; extra == "kokoro"
+Requires-Dist: torchaudio>=2.0; extra == "kokoro"
+Provides-Extra: chatterbox
+Requires-Dist: chatterbox-tts; extra == "chatterbox"
+Requires-Dist: torch>=2.0; extra == "chatterbox"
+Requires-Dist: torchaudio>=2.0; extra == "chatterbox"
+Provides-Extra: local
+Requires-Dist: kokoro>=1.0; extra == "local"
+Requires-Dist: chatterbox-tts; extra == "local"
+Requires-Dist: torch>=2.0; extra == "local"
+Requires-Dist: torchaudio>=2.0; extra == "local"
+Requires-Dist: mlx>=0.5; extra == "local"
+Requires-Dist: mlx-stablediffusion; extra == "local"
+Provides-Extra: cloud
+Requires-Dist: openai>=1.0; extra == "cloud"
+Requires-Dist: elevenlabs>=1.0; extra == "cloud"
+Requires-Dist: google-genai>=0.8; extra == "cloud"
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.12; extra == "dev"
+Requires-Dist: ruff>=0.4; extra == "dev"

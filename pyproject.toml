@@ -1,0 +1,64 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ebook-to-yoto"
+version = "0.1.0"
+description = "Convert DRM-free ebooks into Yoto-ready MP3s and pixel art icons"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.1",
+    "ebooklib>=0.18",
+    "pypdf>=4.0",
+    "beautifulsoup4>=4.12",
+    "lxml>=5.0",
+    "Pillow>=10.0",
+    "mutagen>=1.47",
+    "tqdm>=4.66",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+kokoro = [
+    "kokoro>=1.0",
+    "torch>=2.0",
+    "torchaudio>=2.0",
+]
+chatterbox = [
+    "chatterbox-tts",
+    "torch>=2.0",
+    "torchaudio>=2.0",
+]
+local = [
+    "kokoro>=1.0",
+    "chatterbox-tts",
+    "torch>=2.0",
+    "torchaudio>=2.0",
+    "mlx>=0.5",
+    "mlx-stablediffusion",
+]
+cloud = [
+    "openai>=1.0",
+    "elevenlabs>=1.0",
+    "google-genai>=0.8",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+ebook-to-yoto = "ebook_to_yoto.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ebook_to_yoto*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+markers = ["slow: marks tests as slow (deselect with -m 'not slow')"]
