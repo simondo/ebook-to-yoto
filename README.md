@@ -12,7 +12,7 @@ Convert DRM-free ebooks (EPUB, PDF, MOBI, TXT) into Yoto-ready MP3 audio tracks 
 
 ```bash
 # Clone and set up
-git clone <repo> ebook-to-yoto
+git clone https://github.com/simondo/ebook-to-yoto.git ebook-to-yoto
 cd ebook-to-yoto
 
 # Create venv and install
