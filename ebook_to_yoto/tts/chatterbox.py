@@ -36,6 +36,11 @@ class ChatterboxBackend(TTSBackend):
             return
         try:
             import torch
+            # resemble-perth's PerthImplicitWatermarker is None on some platforms —
+            # patch it with the no-op DummyWatermarker so Chatterbox loads cleanly.
+            import perth
+            if perth.PerthImplicitWatermarker is None:
+                perth.PerthImplicitWatermarker = perth.DummyWatermarker
             from chatterbox.tts import ChatterboxTTS
         except ImportError:
             sys.exit(
@@ -62,7 +67,8 @@ class ChatterboxBackend(TTSBackend):
         self._model = model
 
     def _synthesise_chunk(self, text: str, out_wav: Path) -> None:
-        import torchaudio
+        import soundfile as sf
+        import numpy as np
 
         self._load()
         kwargs: dict = {
@@ -74,7 +80,10 @@ class ChatterboxBackend(TTSBackend):
 
         wav = self._model.generate(text, **kwargs)
 
-        torchaudio.save(str(out_wav), wav, self._model.sr)
+        # wav is a torch tensor of shape (1, samples) — use soundfile to avoid
+        # torchaudio 2.10.0's TorchCodec dependency
+        audio_np = wav.squeeze(0).cpu().numpy()
+        sf.write(str(out_wav), audio_np, self._model.sr)
 
         # Free MPS memory between chunks
         try:

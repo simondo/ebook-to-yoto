@@ -48,7 +48,9 @@
 - ✅ `tts/chatterbox.py` — CPU load → MPS submodule transfer, voice cloning
 - ✅ MPS fallback env var set, `torch.mps.empty_cache()` between chunks
 - ✅ `chatterbox-tts==0.1.6` installed
-- ⚠️ Not yet end-to-end tested with a real book (deferred — user skipping validation)
+- ✅ **End-to-end verified**: `ebook-to-yoto test_book.epub --engine chatterbox --no-icons`
+  - Output: 3 × MP3, ~44s each, valid ID3 tags, manifest.json ✅
+  - Fixes applied: perth watermarker monkey-patch + soundfile instead of torchaudio.save
 
 ### Phase 5 — Cloud TTS Backends ✅
 - ✅ `tts/gemini_tts.py`
@@ -87,8 +89,10 @@
 - ✅ `--scan`, `--skip-existing`, `--split-cards`, `--list-voices` all working
 - ✅ Auto-creates `~/.config/ebook-to-yoto/config.toml` on first run
 
-### Phase 10 — Tests, Hardening & README ⬜
-- ⬜ README.md
+### Phase 10 — Tests, Hardening & README 🔄
+- ✅ README.md — full user documentation
+- ✅ `tests/test_config.py` (10 tests — defaults, TOML parsing, unknown keys, first-run, sidecar)
+- ✅ `tests/test_icons.py` (18 tests — fallback icons, prompt builder, chapter extractor)
 - ⬜ Ctrl+C handling
 - ⬜ Disk space pre-check
 - ⬜ Cloud backend mocked tests
@@ -98,7 +102,7 @@
 ## Test Summary
 ```
 pytest tests/ -m "not slow"
-36 passed, 2 deselected  ✅
+64 passed, 2 deselected  ✅
 ```
 
 ## End-to-End Verified ✅
@@ -111,5 +115,5 @@ pytest tests/ -m "not slow"
 - FLUX.1-schnell is 33 GB download (not 6 GB as estimated) — one-time, cached after
 - FLUX.1-schnell requires `HF_TOKEN` — fallback icons used until set
 - Bus error on process exit after FLUX generation — output is intact, investigate in Phase 10
-- Chatterbox not yet end-to-end tested (user deferred)
+- Chatterbox verified working (3 chapters, ~44s/chapter on M1 Max CPU+MPS)
 - Cloud backends (TTS + icons) code-complete but untested without API keys

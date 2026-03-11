@@ -67,6 +67,10 @@ def _extract_epub(path: Path) -> tuple[BookMetadata, list[Chapter]]:
     cover_bytes, cover_ext = _epub_cover(book)
     meta = BookMetadata(title=title, author=author, cover_bytes=cover_bytes, cover_ext=cover_ext)
 
+    # Build TOC mapping: filename (without fragment) → title
+    toc_map: dict[str, str] = {}
+    _flatten_toc(book.toc, toc_map)
+
     # Spine items
     chapters: list[Chapter] = []
     seen_texts: list[str] = []
@@ -92,8 +96,15 @@ def _extract_epub(path: Path) -> tuple[BookMetadata, list[Chapter]]:
                 seen_texts[-1] = text
             continue
 
-        title_tag = soup.find(re.compile(r"^h[1-3]$"))
-        chapter_title = title_tag.get_text(strip=True) if title_tag else f"Chapter {idx}"
+        # Title priority: TOC map → h-tag text → Chapter N
+        item_name = Path(item.file_name).name
+        chapter_title = toc_map.get(item_name, "")
+        if not chapter_title:
+            title_tag = soup.find(re.compile(r"^h[1-3]$"))
+            if title_tag:
+                chapter_title = title_tag.get_text(strip=True)
+        if not chapter_title:
+            chapter_title = f"Chapter {idx}"
 
         images = _epub_chapter_images(book, item, soup)
         chapters.append(Chapter(index=idx, title=chapter_title, text=text, images=images))
@@ -101,6 +112,27 @@ def _extract_epub(path: Path) -> tuple[BookMetadata, list[Chapter]]:
         idx += 1
 
     return meta, chapters
+
+
+def _flatten_toc(toc_entries, result: dict) -> None:
+    """Recursively flatten EPUB TOC into {filename: title} mapping."""
+    for entry in toc_entries:
+        if hasattr(entry, "href") and hasattr(entry, "title") and entry.title:
+            # Strip fragment (#section-id) from href
+            filename = Path(entry.href.split("#")[0]).name
+            if filename and filename not in result:
+                result[filename] = entry.title
+        # Section objects have a nested list of children
+        if hasattr(entry, "__iter__") and not hasattr(entry, "href"):
+            _flatten_toc(entry, result)
+        elif isinstance(entry, tuple) and len(entry) == 2:
+            # (Section, [children]) tuple format
+            section, children = entry
+            if hasattr(section, "href") and hasattr(section, "title") and section.title:
+                filename = Path(section.href.split("#")[0]).name
+                if filename and filename not in result:
+                    result[filename] = section.title
+            _flatten_toc(children, result)
 
 
 def _epub_cover(book) -> tuple[Optional[bytes], str]:
