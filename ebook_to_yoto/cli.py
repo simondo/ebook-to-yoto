@@ -203,15 +203,25 @@ def _print_voices(engine: str) -> None:
 @click.argument("output_dir", type=click.Path(exists=True, file_okay=False, path_type=Path))
 @click.option("--resume", is_flag=True, default=False, help="Skip tracks already noted as uploaded in manifest")
 @click.option("--dry-run", is_flag=True, default=False, help="Authenticate and validate files but don't upload")
-def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
+@click.option("--yoto-card-id", default=None, help="Update an existing Yoto card rather than creating a new one")
+def upload(output_dir: Path, resume: bool, dry_run: bool, yoto_card_id: Optional[str]) -> None:
     """Upload a generated output folder to a Yoto MYO card.
 
     OUTPUT_DIR: path to a folder previously created by the convert command
     (must contain manifest.json).
     """
+    _run_upload(output_dir, resume=resume, dry_run=dry_run, yoto_card_id=yoto_card_id)
+
+
+def _run_upload(
+    output_dir: Path,
+    resume: bool = False,
+    dry_run: bool = False,
+    yoto_card_id: Optional[str] = None,
+) -> None:
     import json
     from tqdm import tqdm
-    from .uploader import authenticate, upload_track, create_card
+    from .uploader import authenticate, upload_track, upload_cover, save_card
 
     manifest_path = output_dir / "manifest.json"
     if not manifest_path.exists():
@@ -224,8 +234,13 @@ def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
     if not tracks:
         raise click.ClickException("No tracks found in manifest.json")
 
+    # Use existing card ID from manifest if not overridden
+    effective_card_id = yoto_card_id or manifest.get("yoto_content_id")
+
     print(f"Book:   {book_title}")
     print(f"Tracks: {len(tracks)}")
+    if effective_card_id:
+        print(f"Card:   updating existing card {effective_card_id}")
 
     if dry_run:
         print("Dry run — validating files only...")
@@ -238,6 +253,15 @@ def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
     print("\nAuthenticating with Yoto...")
     access_token = authenticate()
 
+    # Upload cover image if present
+    cover_url = None
+    cover_candidates = list(output_dir.glob("cover.*"))
+    if cover_candidates:
+        print(f"Uploading cover image...")
+        cover_url = upload_cover(cover_candidates[0], access_token)
+        if not cover_url:
+            print("  Warning: cover upload failed, continuing without cover.")
+
     uploaded_tracks = []
     already_uploaded = set(manifest.get("uploaded_tracks", []))
 
@@ -245,7 +269,6 @@ def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
         mp3_name = track["mp3"]
         if resume and mp3_name in already_uploaded:
             tqdm.write(f"  Skipping (already uploaded): {mp3_name}")
-            # Re-use stored track info if available
             stored = manifest.get("uploaded_track_data", {}).get(mp3_name)
             if stored:
                 uploaded_tracks.append(stored)
@@ -262,9 +285,8 @@ def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
             track_data = upload_track(mp3_path, track["title"], icon_path, access_token)
             uploaded_tracks.append(track_data)
 
-            # Save progress to manifest after each track
+            # Save progress after each track
             already_uploaded.add(mp3_name)
-            manifest.setdefault("uploaded_tracks", [])
             manifest["uploaded_tracks"] = list(already_uploaded)
             manifest.setdefault("uploaded_track_data", {})[mp3_name] = track_data
             manifest_path.write_text(json.dumps(manifest, indent=2))
@@ -274,14 +296,22 @@ def upload(output_dir: Path, resume: bool, dry_run: bool) -> None:
             tqdm.write("  Use --resume to retry from this point.")
             raise SystemExit(1)
 
-    print(f"\nCreating Yoto card: {book_title!r}...")
-    content_id = create_card(book_title, uploaded_tracks, access_token)
+    action = "Updating" if effective_card_id else "Creating"
+    print(f"\n{action} Yoto card: {book_title!r}...")
+    content_id = save_card(
+        book_title,
+        uploaded_tracks,
+        access_token,
+        cover_url=cover_url,
+        card_id=effective_card_id,
+    )
 
     manifest["yoto_content_id"] = content_id
+    manifest["uploaded_at"] = __import__("datetime").datetime.now().isoformat(timespec="seconds")
     manifest_path.write_text(json.dumps(manifest, indent=2))
 
-    print(f"Done! Card created: {content_id}")
-    print("Assign it to a physical card at: https://my.yotoplay.com/make-your-own")
+    print(f"Done! Card ID: {content_id}")
+    print("Tap a MYO card in the Yoto app to link it to this playlist.")
 
 
 def main():
