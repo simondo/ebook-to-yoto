@@ -1,2 +1,0 @@
-[console_scripts]
-ebook-to-yoto = ebook_to_yoto.cli:main
